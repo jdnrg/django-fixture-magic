@@ -26,6 +26,9 @@ class Command(BaseCommand):
         """Add command line arguments to parser"""
 
         # Required Args
+        parser.add_argument(dest='database',
+                            help='Name of the db. (default)')
+
         parser.add_argument(dest='model',
                             help='Name of the model, with app name first.'
                             ' Eg "app_name.model_name"')
@@ -67,7 +70,9 @@ class Command(BaseCommand):
     def handle(self, *args, **options):
         error_text = ('%s\nTry calling dump_object with --help argument or ' +
                       'use the following arguments:\n %s' % self.args)
+        database = options['database']
         try:
+                       
             # verify input is valid
             try:
                 (app_label, model_name) = options['model'].split('.')
@@ -91,10 +96,10 @@ class Command(BaseCommand):
 
         dump_me = loading.get_model(app_label, model_name)
         if query:
-            objs = dump_me.objects.filter(**json.loads(query))
+            objs = dump_me.objects.using(database).filter(**json.loads(query))
         else:
             if ids[0] == '*':
-                objs = dump_me.objects.all()
+                objs = dump_me.objects.using(database).all()
             else:
                 try:
                     parsers = int, long, str
@@ -102,7 +107,7 @@ class Command(BaseCommand):
                     parsers = int, str
                 for parser in parsers:
                     try:
-                        objs = dump_me.objects.filter(pk__in=map(parser, ids))
+                        objs = dump_me.objects.using(database).filter(pk__in=map(parser, ids))
                     except ValueError:
                         pass
                     else:
